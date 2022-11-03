@@ -1,6 +1,6 @@
 ---
 title: "BEE 4750/5750 Homework 4"
-author: "Your name here (your netID here)"
+author: "Andrew Scacchi (ADS339)"
 date: `j import Dates; Dates.Date(Dates.now())`
 weave_options:
     term: false
@@ -19,15 +19,65 @@ Pkg.instantiate()
 # Problem 1
 
 ## Problem 1.1
+```julia
+#Processing Costs Given
+DispoFacility = ["Landfill", "Recycling", "Waste2Energy"]
+FacilityCapacity = [200,350,150]; # Mg/day
+FixedCost = [2000, 1500, 2500]; # $/day
+TippingFee = [50, 7, 60]; # $/Mg
+RecyclingCost = [0, 45, 0]; # $/Mg
 
+#Transportation Metrics Given
+Transport= 1.5; # Per Mg-Km
+City1 = [30, 5, 15]; #City 1 distances to treatment facilities (km)
+City2 = [25, 15, 10]; #City 2 distances (km)
+MRF = [32, 0, 15]; #Distances between facilities (km)
+LF = [0, 32, 18]; #Distance from landfill (km)
+WTE = [18, 15, 0]; #Distance from waste 2 energy (km)
+
+#Waste Input Metrics Given
+Cities = ["City 1", "City 2"];
+DSW = [100, 170]; #Mg/Day of solid waste produced by cities
+
+Component = ["Food Wastes", "Paper & Cardboard", "Plastics", "Textiles", "Rubber/ Leather", "Wood", "Yard Wastes", "Glass", 
+"Ferrous", "Aluminum", "Other Metal", "Miscellaneous"]; #Listed Solid Waste Types Processed
+PctTM = [.15, .40, .05, .03, .02, .05, .18, .04, .02, .02, .01, .03]; #Percent of total mass processed
+CombustionAshPct = [0.08, 0.07, 0.05, 0.10, 0.15, 0.02, 0.02, 1, 1, 1, 1, 0.70]; #Percent of combustion that turns to ash
+MRFRecycle = [0, 0.55, 0.15, 0.10, 0, 0.30, 0.40, 0.60, 0.75, 0.80, 0.50, 0]; #Percent able to be recycled in a MRF
+
+
+#Compute Fractions of waste streams
+RecycleCoeff = sum(PctTM .* MRFRecycle)
+AshCoeff = sum(PctTM.* CombustionAshPct)
+XX = round(RecycleCoeff, digits = 3); #round computed values
+YY = round(AshCoeff, digits = 3); #Round computed values
+
+#Print result
+println("The overall recycling fraction of solid waste produced is ", XX);
+println("The overall ash fraction of solid waste produced is ", YY);
+```
 ## Problem 1.2
+This problem appears to have three decision variables: 
+1) The amount of waste (in Mg/day) transported from $City_i$ to $Facility_j$, denoted as $W_{i,j}$.
+2) How much residual waste (in Mg/day) is transported from the the Recycling facility, $F_r$ to each of the other two
+facilities for final disposal. This is denoted as $R_{k,j}$.
+3) Whether any of the facilities will be operational on any given day, denoted by $O_j$, with $O$ being a standard boolean.
 
 ## Problem 1.3
+```julia
 
+
+```
 ## Problem 1.4
+```julia
 
+
+```
 ## Problem 1.5
+```julia
 
+
+```
 ## Problem 1.6
 
 # Problem 2
