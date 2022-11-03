@@ -37,7 +37,7 @@ WTE = [18, 15, 0]; #Distance from waste 2 energy (km)
 
 #Waste Input Metrics Given
 Cities = ["City 1", "City 2"];
-DSW = [100, 170]; #Mg/Day of solid waste produced by cities
+DSW = [100, 170]; #Daily solid waste produced by cities (Mg)
 
 Component = ["Food Wastes", "Paper & Cardboard", "Plastics", "Textiles", "Rubber/ Leather", "Wood", "Yard Wastes", "Glass", 
 "Ferrous", "Aluminum", "Other Metal", "Miscellaneous"]; #Listed Solid Waste Types Processed
@@ -64,11 +64,41 @@ facilities for final disposal. This is denoted as $R_{k,j}$.
 3) Whether any of the facilities will be operational on any given day, denoted by $O_j$, with $O$ being a standard boolean.
 
 ## Problem 1.3
-```julia
+The given objective of this model is to dtermine an optimal disposal plan for the two cities, 
+i.e. find the disposal allocation that minimizes costs for the cities. To do this, the objective function needs to derive 
+the functions that govern the total cost (fixed and variable) for each of the three facilities. Then these three functions will be 
+combined into one total cost function, which will serve as the objective function subjected to constraints.
 
+First, $C_{LF}$ will represent the cost of landfill disposal:
+```math
+C_{LF} = O_1*2000 + 50*(W_{1,1}+ W_{2,1} + R_{2,1} + R_{3,1}) + 1.5*(City1[1]*W_{1,1} + City2[1]* W_{2,1} + LF[2]*R_{1,2} + LF[3]*R_{1,3});
 
 ```
+
+Next, $C_{MRF}$ will represent the cost of the MRF:
+```math
+C_{MRF} = O_2*1500 + 52*(W_{1,2} + W_{2,2} + R_{1,2} + R_{3,2}) + 1.5*(City1[2]*W_{1,2} + City2[2]*W_{2,2} + MRF[1]*R_{2,1} + MRF[3]*R_{2,3});
+
+```
+
+Lastly, $C_{W2E}$ is the cost of the waste to energy recovery plant:
+
+```math
+C_{W2E} = O_3*2500 + 60*(W_{1,3} + W_{2,3} + R_{1,3} + R_{2,3}) + 1.5*(City1[3]*W_{1,3} + City2[3]*W_{2,3} + WTE[1]*R_{3,1} + WTE[2]*R_{3,2});
+```
+
+Eliminating unnessesary terms and aggregating leaves the cost objective function:
+```math
+TC = O_1 * 2000 + O_2*1500 + O_3*2500 + 50*(W_{1,1}+ W_{2,1} + R_{2,1} + R_{3,1}) + 1.5*(City1[1]*W_{1,1} + City2[2]*W_{2,1}) + 52*(W_{1,2} + W_{2,2})+
+1.5*(City1[2]*W_{1,2} + City2[2]*W_{2,2} + MRF[1]*R_{2,1} + MRF[3]*R_{2,3}) + 60*(W_{1,3} + W_{2,3} + R_{2,3}) + 1.5*(City1[3]*W_{1,3} + City2[3]*W_{2,3} + WTE[1]*R_{3,1})
+```
+Or simply:
+
+```math
+TC = Min(C_{LF} + C_{MRF} + C_{W2E})
+```
 ## Problem 1.4
+
 ```julia
 
 
