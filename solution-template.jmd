@@ -38,6 +38,8 @@ WTE = [18, 15, 0]; #Distance from waste 2 energy (km)
 #Waste Input Metrics Given
 Cities = ["City 1", "City 2"];
 DSW = [100, 170]; #Daily solid waste produced by cities (Mg)
+I = 1:2; #set values of I for later
+J = 1:3; #set values of J for later
 
 Component = ["Food Wastes", "Paper & Cardboard", "Plastics", "Textiles", "Rubber/ Leather", "Wood", "Yard Wastes", "Glass", 
 "Ferrous", "Aluminum", "Other Metal", "Miscellaneous"]; #Listed Solid Waste Types Processed
@@ -59,7 +61,7 @@ println("The overall ash fraction of solid waste produced is ", YY);
 ## Problem 1.2
 This problem appears to have three decision variables: 
 1) The amount of waste (in Mg/day) transported from $City_i$ to $Facility_j$, denoted as $W_{i,j}$.
-2) How much residual waste (in Mg/day) is transported from the the Recycling facility, $F_r$ to each of the other two
+2) How much residual waste (in Mg/day) is transported from the the Recycling facility to each of the other two
 facilities for final disposal. This is denoted as $R_{k,j}$.
 3) Whether any of the facilities will be operational on any given day, denoted by $O_j$, with $O$ being a standard boolean.
 
@@ -76,7 +78,7 @@ C_{LF} = O_1*2000 + 50*(W_{1,1}+ W_{2,1} + R_{2,1} + R_{3,1}) + 1.5*(City1[1]*W_
 
 Next, $C_{MRF}$ will represent the cost of the MRF:
 ```math
-C_{MRF} = O_2*1500 + 52*(W_{1,2} + W_{2,2} + R_{1,2} + R_{3,2}) + 1.5*(City1[2]*W_{1,2} + City2[2]*W_{2,2} + MRF[1]*R_{2,1} + MRF[3]*R_{2,3});
+C_{MRF} = O_2*1500 + 7*(W_{1,2} + W_{2,2} + R_{1,2} + R_{3,2}) + (0.3775*45)*(W_{1,2} + W_{2,2} + R_{1,2} + R_{3,2})+ 1.5*(City1[2]*W_{1,2} + City2[2]*W_{2,2} + MRF[1]*R_{2,1} + MRF[3]*R_{2,3});
 ```
 
 Lastly, $C_{W2E}$ is the cost of the waste to energy recovery plant:
@@ -87,7 +89,7 @@ C_{W2E} = O_3*2500 + 60*(W_{1,3} + W_{2,3} + R_{1,3} + R_{2,3}) + 1.5*(City1[3]*
 
 Eliminating unnessesary terms and aggregating leaves the cost objective function:
 ```math
-TC = O_1 * 2000 + O_2*1500 + O_3*2500 + 50*(W_{1,1}+ W_{2,1} + R_{2,1} + R_{3,1}) + 1.5*(City1[1]*W_{1,1} + City2[2]*W_{2,1}) + 52*(W_{1,2} + W_{2,2})+
+TC = O_1 * 2000 + O_2*1500 + O_3*2500 + 50*(W_{1,1}+ W_{2,1} + R_{2,1} + R_{3,1}) + 1.5*(City1[1]*W_{1,1} + City2[2]*W_{2,1}) + 7*(W_{1,2} + W_{2,2})+ (0.3775*45)*(W_{1,2} + W_{2,2})+
 1.5*(City1[2]*W_{1,2} + City2[2]*W_{2,2} + MRF[1]*R_{2,1} + MRF[3]*R_{2,3}) + 60*(W_{1,3} + W_{2,3} + R_{2,3}) + 1.5*(City1[3]*W_{1,3} + City2[3]*W_{2,3} + WTE[1]*R_{3,1})
 ```
 Or simply:
@@ -169,17 +171,150 @@ These constraints incorporate the concept of conservation of mass, and ensure th
 
 ## Problem 1.5
 ```julia
+using JuMP
+using Cbc
+
+waste = Model(Cbc.Optimizer)
+
+#decision variables
+@variable(waste, W[i in I, j in J] ≥ 0)
+@variable(waste, R[k in J, j in J] ≥ 0)
+@variable(waste, O[j in J], Bin)
+
+#define objective
+@objective(waste, Min, sum([2000,1500,2500].*O) + sum([95 31.5 82.5; 87.5 46.49 75].*W) + sum([0 0 0; 98 0 82.5; 77 0 0].*R));
+
+#Constraints
+#Capacity and input constraints
+@constraint(waste, LF, W[1,1] + W[2,1] + R[2,1] + R[3,1] ≤ 200);
+@constraint(waste, MRF, W[1,2] + W[2,2] ≤ 350);
+@constraint(waste, W2E, W[1,3] + W[2,3] + R[2,3] ≤ 150);
+@constraint(waste, MSW[i in I], sum(W[i,:]) == DSW[i]);
+
+#If no waste servicing, turn off fixed cost
+@constraint(waste, open1, O[1] == 1)
+@constraint(waste, open2, !O[2] => {W[1,2] + W[2,2] == 0})
+@constraint(waste, open3, !O[3] => {W[1,3] + W[2,3] + R[2,3] == 0})
+
+#Mass balance constraints
+
+@constraint(waste,RR1, sum(R[1,:])== 0)
+@constraint(waste, RR2, R[2,3] + R[2,1] == (1-XX)*(W[1,2]+W[2,2]))
+@constraint(waste, RR3, R[3,1] == YY*(W[1,3]+W[2,3]) + NewAshContent*(R[2,3]))
+@constraint(waste, SelfServe, sum(R[j,j] for j in J) == 0)
+@constraint(waste, NoReverse, R[3,2] == 0)
 
 
+#Run code
+set_silent(waste)
+optimize!(waste)
 ```
 ## Problem 1.6
+```julia
 
+lowCost = round(objective_value(waste), digits = 2 );
+println("The Optimal Objective Value is \$", lowCost,".");
+println(value.(W));
+value.(O);
+println(value.(R));
+```
+Thus, the MRF/ recycling facility is not in use (see O[2]).
+
+Diagram:
+```julia
+import Pkg; Pkg.add("Images");
+import Pkg; Pkg.add("FileIO");
+using Images, FileIO
+img_path= "C:/Users/Owner/OneDrive - Cornell University/Pictures/BEE4750-HW4-Diagram.png"
+image = load(img_path)
+```
 # Problem 2
 
 ## Problem 2.1
+What the decision variables are will remain unchanged, since the tax would only impact the magnitudes of them. However due to coding limitatons, 
+notation must change, so the number '2' has been suffixed onto each instance of one. Additionally, the constraints would also stay the same since
+they only govern physical constraints and capacity limits, but not pricing. The only thing that will signficantly change is the objective, which 
+needs to be rewritten to incorporate the increased costs of transportation and tipping at the WTE. 
+
+After redoing the math, the governing objective function will remain the same
+```math
+TC^{2} = Min(C^{2}_{LF}) + C^{2}_{MRF} + C^{2}_{W2E})
+```
+
+But the composition of those will change, specifically the coefficients used in the matrices:
+```math
+TC^{2} = O^{2}_1 * 2000 + O^{2}_2*1500 + O^{2}_3*2500 + 50*(W^{2}_{1,1}+ W^{2}_{2,1} + R^{2}_{2,1} + R^{2}_{3,1}) + 2.0*(City1[1]*W^{2}_{1,1} + City2[2]*W^{2}_{2,1}) + 7*(W^{2}_{1,2} + W^{2}_{2,2})+ (0.3775*45)*(W^{2}_{1,2} + W^{2}_{2,2})+
+2.0*(City1[2]*W^{2}_{1,2} + City2[2]*W^{2}_{2,2} + MRF[1]*R^{2}_{2,1} + MRF[3]*R^{2}_{2,3}) + 75*(W^{2}_{1,3} + W^{2}_{2,3} + R^{2}_{2,3}) + 2.0*(City1[3]*W^{2}_{1,3} + City2[3]*W^{2}_{2,3} + WTE[1]*R^{2}_{3,1})
+```
+Changing the objective to:
+@objective(waste2, Min, sum([2000,1500,2500].*O2) + sum([110 33.9875 105; 100 53.9875 95].*W2) + sum([0 0 0; 114 0 105; 86 0 0].*R2));
 
 ## Problem 2.2
+```julia
+using JuMP
+using Cbc
 
+waste2 = Model(Cbc.Optimizer)
+
+#decision variables
+@variable(waste2, W2[i in I, j in J] ≥ 0)
+@variable(waste2, R2[k in J, j in J] ≥ 0)
+@variable(waste2, O2[j in J], Bin)
+
+#define objective
+@objective(waste2, Min, sum([2000,1500,2500].*O2) + sum([110 33.9875 105; 100 53.9875 95].*W2) + sum([0 0 0; 114 0 105; 86 0 0].*R2));
+
+#Constraints
+#Capacity and input constraints
+@constraint(waste2, LF, W2[1,1] + W2[2,1] + R2[2,1] + R2[3,1] ≤ 200);
+@constraint(waste2, MRF, W2[1,2] + W2[2,2] ≤ 350);
+@constraint(waste2, W2E, W2[1,3] + W2[2,3] + R2[2,3] ≤ 150);
+@constraint(waste2, MSW[i in I], sum(W2[i,:]) == DSW[i]);
+
+#If no waste servicing, turn off fixed cost
+@constraint(waste2, open1, O2[1] == 1)
+@constraint(waste2, open2, !O2[2] => {W2[1,2] + W2[2,2] == 0})
+@constraint(waste2, open3, !O2[3] => {W2[1,3] + W2[2,3] + R2[2,3] == 0})
+
+#Mass balance constraints
+
+@constraint(waste2,RR1, sum(R2[1,:])== 0)
+@constraint(waste2, RR2, R2[2,3] + R2[2,1] == (1-XX)*(W2[1,2]+W2[2,2]))
+@constraint(waste2, RR3, R2[3,1] == YY*(W2[1,3]+W2[2,3]) + NewAshContent*(R2[2,3]))
+@constraint(waste2, SelfServe, sum(R2[j,j] for j in J) == 0)
+@constraint(waste2, NoReverse, R2[3,2] == 0)
+
+
+#Run code
+set_silent(waste2)
+optimize!(waste2)
+
+
+```
 ## Problem 2.3
 
+```julia
+lowCost2 = round(objective_value(waste2), digits = 2 );
+println("The New Optimal Objective Value is \$", lowCost2,".");
+println(value.(W2));
+println(value.(O2));
+println(value.(R2));
+```
+As a result, now the Waste-to-Energy facility (j = 3) will not be operational, and the MRF and Landfill will be.
+City 1 will now send all of their waste (100 Mg/day)to the MRF, and City2 will split their 170 Mg/day almost evenly 
+between the landfill and MRF (84.57 and 85.43 Mg/day, respectively). Of the waste send to the MRF, 115.43 Mg/day will ultimately 
+still end up in the landfill. 
+
+The primary differences are that now the MRF is operational instead of the Waste-to-Energy facility, and that City2 is no longer sending all of their waste
+directly to the Landfill, but sending half of it to the MRF first. Ultimately, though, the Landfill still takes on the maxium 200Mg/day in either instance, 
+reiterating the fact that it still remains the lowest cost method of waste disposal.
+
+Diagram:
+```julia
+using Images, FileIO
+img_path2= "C:/Users/Owner/OneDrive - Cornell University/Pictures/BEE4750-HW4-Diagram2.png"
+image2 = load(img_path2)
+```
 # References
+Help with importing images from file -> https://juliaimages.org/latest/install/
+Help with LaTex terminology -> https://www.cmor-faculty.rice.edu/~heinken/latex/symbols.pdf
