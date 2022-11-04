@@ -41,8 +41,8 @@ DSW = [100, 170]; #Daily solid waste produced by cities (Mg)
 I = 1:2; #set values of I for later
 J = 1:3; #set values of J for later
 
-Component = ["Food Wastes", "Paper & Cardboard", "Plastics", "Textiles", "Rubber/ Leather", "Wood", "Yard Wastes", "Glass", 
-"Ferrous", "Aluminum", "Other Metal", "Miscellaneous"]; #Listed Solid Waste Types Processed
+Component = ["Food Wastes", "Paper & Cardboard", "Plastics", "Textiles", "Rubber/ Leather", "Wood", "Yard Wastes", 
+"Glass", "Ferrous", "Aluminum", "Other Metal", "Miscellaneous"]; #Listed Solid Waste Types Processed
 PctTM = [.15, .40, .05, .03, .02, .05, .18, .04, .02, .02, .01, .03]; #Percent of total mass processed
 CombustionAshPct = [0.08, 0.07, 0.05, 0.10, 0.15, 0.02, 0.02, 1, 1, 1, 1, 0.70]; #Percent of combustion that turns to ash
 MRFRecycle = [0, 0.55, 0.15, 0.10, 0, 0.30, 0.40, 0.60, 0.75, 0.80, 0.50, 0]; #Percent able to be recycled in a MRF
@@ -73,24 +73,25 @@ combined into one total cost function, which will serve as the objective functio
 
 First, $C_{LF}$ will represent the cost of landfill disposal:
 ```math
-C_{LF} = O_1*2000 + 50*(W_{1,1}+ W_{2,1} + R_{2,1} + R_{3,1}) + 1.5*(City1[1]*W_{1,1} + City2[1]* W_{2,1} + LF[2]*R_{1,2} + LF[3]*R_{1,3});
+C_{LF} = O_1*2000 + 50*(W_{1,1}+ W_{2,1} + R_{2,1} + R_{3,1}) + 1.5*(City1[1]*W_{1,1} + City2[1]* W_{2,1} + LF[2]*R_{1,2} + LF[3]*R_{1,3})
 ```
 
 Next, $C_{MRF}$ will represent the cost of the MRF:
 ```math
-C_{MRF} = O_2*1500 + 7*(W_{1,2} + W_{2,2} + R_{1,2} + R_{3,2}) + (0.3775*45)*(W_{1,2} + W_{2,2} + R_{1,2} + R_{3,2})+ 1.5*(City1[2]*W_{1,2} + City2[2]*W_{2,2} + MRF[1]*R_{2,1} + MRF[3]*R_{2,3});
+C_{MRF} = O_2*1500 + 7*(W_{1,2} + W_{2,2} + R_{1,2} + R_{3,2}) + (0.3775*45)*(W_{1,2} + W_{2,2} + R_{1,2} + R_{3,2})+ \\ 
+1.5*(City1[2]*W_{1,2} + City2[2]*W_{2,2} + MRF[1]*R_{2,1} + MRF[3]*R_{2,3})
 ```
 
 Lastly, $C_{W2E}$ is the cost of the waste to energy recovery plant:
 
 ```math
-C_{W2E} = O_3*2500 + 60*(W_{1,3} + W_{2,3} + R_{1,3} + R_{2,3}) + 1.5*(City1[3]*W_{1,3} + City2[3]*W_{2,3} + WTE[1]*R_{3,1} + WTE[2]*R_{3,2});
+C_{W2E} = O_3*2500 + 60*(W_{1,3} + W_{2,3} + R_{1,3} + R_{2,3}) + 1.5*(City1[3]*W_{1,3} + City2[3]*W_{2,3} + WTE[1]*R_{3,1} + WTE[2]*R_{3,2})
 ```
 
 Eliminating unnessesary terms and aggregating leaves the cost objective function:
 ```math
-TC = O_1 * 2000 + O_2*1500 + O_3*2500 + 50*(W_{1,1}+ W_{2,1} + R_{2,1} + R_{3,1}) + 1.5*(City1[1]*W_{1,1} + City2[2]*W_{2,1}) + 7*(W_{1,2} + W_{2,2})+ (0.3775*45)*(W_{1,2} + W_{2,2})+
-1.5*(City1[2]*W_{1,2} + City2[2]*W_{2,2} + MRF[1]*R_{2,1} + MRF[3]*R_{2,3}) + 60*(W_{1,3} + W_{2,3} + R_{2,3}) + 1.5*(City1[3]*W_{1,3} + City2[3]*W_{2,3} + WTE[1]*R_{3,1})
+TC = O_1 * 2000 + O_2*1500 + O_3*2500 + 50*(W_{1,1}+ W_{2,1} + R_{2,1} + R_{3,1}) + 1.5*(City1[1]*W_{1,1} + City2[2]*W_{2,1}) 
+\\+ 7*(W_{1,2} + W_{2,2})+ (0.3775*45)*(W_{1,2} + W_{2,2})+ 1.5*(City1[2]*W_{1,2} + City2[2]*W_{2,2} + MRF[1]*R_{2,1} + MRF[3]*R_{2,3})\\ + 60*(W_{1,3} + W_{2,3} + R_{2,3}) + 1.5*(City1[3]*W_{1,3} + City2[3]*W_{2,3} + WTE[1]*R_{3,1})
 ```
 Or simply:
 
@@ -103,38 +104,38 @@ TC = Min(C_{LF} + C_{MRF} + C_{W2E})
 There are several constraints to ghis problem. In no order they are:
 1) The sum of waste transported from each city to a facility adds up to the amount produced:
 ```math
-\sum W_{1,j} = 100 ;
-\sum W_{2,j} = 170 ;
+\sum W_{1,j} = 100 \\
+\sum W_{2,j} = 170 
 ```
 This ensures that waste WILL be produced and need to be processed in some way every day.
 
 2) Recycling residuals from the MRF can only go to either the landfill or W2E plant, and the residual ash of the W2E plant must go the landfill.
 ```math
-R_{1,1}, R_{1,2}, R_{1,3}, R_{2,2}, R_{3,2}, R_{3,3} = 0;
-R_{3,1} = CombustionAshPercent * (W_{1,3} + W_{2,3} + R_{2,3});
+R_{1,1}, R_{1,2}, R_{1,3}, R_{2,2}, R_{3,2}, R_{3,3} = 0 \\
+R_{3,1} = CombustionAshPercent * (W_{1,3} + W_{2,3} + R_{2,3})
 ```
 This eliminates violating any physical constraints on the treatments, including a facility sending waste to itself.
 
 3) If no waste is going to a facility, then $O_j$ = 0
 ```math
-Iff W_{1,1} + W_{2,1} + R_{2,1} + R_{3,1} = 0, O_1 = 0;
-Iff W_{1,2} + W_{2,2} = 0, O_2 = 0;
-Iff W_{1,3} + W_{2,3} + R_{2,3} = 0, O_3 = 0;
+IFF W_{1,1} + W_{2,1} + R_{2,1} + R_{3,1} = 0, O_1 = 0 \\
+IFF W_{1,2} + W_{2,2} = 0, O_2 = 0 \\
+IFF W_{1,3} + W_{2,3} + R_{2,3} = 0, O_3 = 0 
 ```
 In affect, this turns off the boolean and removes fixed costs from the equation.
 
 4) Waste cannot be transported in a negative amount.
 ```math
-W_{i,j} \geq 0;
-R_{k,j} \geq 0;
+W_{i,j} \geq 0 \\
+R_{k,j} \geq 0
 ```
 This means that msw can only flow in one direction.
 
 5) A facility cannot handle more than its capacity.
 ```math
-W_{1,1} + W_{2,1} + R_{2,1} + R_{3,1}\leq 200;
-W_{1,2} + W_{2,2} \leq 350;
-W_{1,3} + W_{2,3} + R_{2,3} \leq 150;
+W_{1,1} + W_{2,1} + R_{2,1} + R_{3,1}\leq 200 \\
+W_{1,2} + W_{2,2} \leq 350 \\
+W_{1,3} + W_{2,3} + R_{2,3} \leq 150 
 ```
 
 6) Only unrecyclable MSW leaves the MRF, supporting the conservation of mass.
@@ -145,7 +146,7 @@ R_{2,1} + R_{2,3} = (1-XX) * (W_{1,2} + W_{2,2})
 7) Ash that comes from recycled materials has a different combustion yield than virgin materials.
 While the component of ash from virgin marterial can be denoted by:
 ```math
-R_{3,1}^virgin = (YY) * (W_{1,3} + W_{2,3}) 
+R^{virgin}_{3,1} = (YY) * (W_{1,3} + W_{2,3}) 
 ```
 Residual recycling has a different composition and ash rate that needs to be derived. This is done by finding the 
 material breakdown of materials that were unable to be recycled, and recomputing using the same methodology for the original calculation, as follows:
@@ -158,11 +159,11 @@ NewAshContent = sum(NewMasses.*CombustionAshPct)
 ```
 Meaning that 
 ```math
-R_{3,1}^recovered = NewAshContent*R_{2,3};
+R^{recovered}_{3,1} = NewAshContent*R_{2,3};
 ```
-For an aggregate of:
+Combine to make:
 ```math
-R_{3,1} = R_{3,1}^recovered + R_{3,1}^virgin;
+R_{3,1} = R^{recovered}_{3,1} + R^{virgin}_{3,1}
 =NewAshContent*R_{2,3} + (YY) * (W_{1,3} + W_{2,3}) 
 ```
 
@@ -182,7 +183,8 @@ waste = Model(Cbc.Optimizer)
 @variable(waste, O[j in J], Bin)
 
 #define objective
-@objective(waste, Min, sum([2000,1500,2500].*O) + sum([95 31.5 82.5; 87.5 46.49 75].*W) + sum([0 0 0; 98 0 82.5; 77 0 0].*R));
+@objective(waste, Min, sum([2000,1500,2500].*O) + sum([95 31.5 82.5; 87.5 46.49 75].*W) +
+ sum([0 0 0; 98 0 82.5; 77 0 0].*R));
 
 #Constraints
 #Capacity and input constraints
@@ -214,9 +216,10 @@ optimize!(waste)
 
 lowCost = round(objective_value(waste), digits = 2 );
 println("The Optimal Objective Value is \$", lowCost,".");
-println(value.(W));
-value.(O);
-println(value.(R));
+
+display(value.(W));
+display(value.(O));
+display(value.(R));
 ```
 Thus, the MRF/ recycling facility is not in use (see O[2]).
 
@@ -238,13 +241,14 @@ needs to be rewritten to incorporate the increased costs of transportation and t
 
 After redoing the math, the governing objective function will remain the same
 ```math
-TC^{2} = Min(C^{2}_{LF}) + C^{2}_{MRF} + C^{2}_{W2E})
+TC^{2} = Min(C^{2}_{LF} + C^{2}_{MRF} + C^{2}_{W2E})
 ```
 
 But the composition of those will change, specifically the coefficients used in the matrices:
 ```math
-TC^{2} = O^{2}_1 * 2000 + O^{2}_2*1500 + O^{2}_3*2500 + 50*(W^{2}_{1,1}+ W^{2}_{2,1} + R^{2}_{2,1} + R^{2}_{3,1}) + 2.0*(City1[1]*W^{2}_{1,1} + City2[2]*W^{2}_{2,1}) + 7*(W^{2}_{1,2} + W^{2}_{2,2})+ (0.3775*45)*(W^{2}_{1,2} + W^{2}_{2,2})+
-2.0*(City1[2]*W^{2}_{1,2} + City2[2]*W^{2}_{2,2} + MRF[1]*R^{2}_{2,1} + MRF[3]*R^{2}_{2,3}) + 75*(W^{2}_{1,3} + W^{2}_{2,3} + R^{2}_{2,3}) + 2.0*(City1[3]*W^{2}_{1,3} + City2[3]*W^{2}_{2,3} + WTE[1]*R^{2}_{3,1})
+TC^{2} = O^{2}_1 * 2000 + O^{2}_2*1500 + O^{2}_3*2500 + 50*(W^{2}_{1,1}+ W^{2}_{2,1} + R^{2}_{2,1} + R^{2}_{3,1}) + 2.0*(City1[1]*W^{2}_{1,1} + City2[2]*W^{2}_{2,1}) \\
++ 7*(W^{2}_{1,2} + W^{2}_{2,2})+ (0.3775*45)*(W^{2}_{1,2} + W^{2}_{2,2})+ 2.0*(City1[2]*W^{2}_{1,2} + City2[2]*W^{2}_{2,2} + MRF[1]*R^{2}_{2,1} + MRF[3]*R^{2}_{2,3}) \\
++ 75*(W^{2}_{1,3} + W^{2}_{2,3} + R^{2}_{2,3}) + 2.0*(City1[3]*W^{2}_{1,3} + City2[3]*W^{2}_{2,3} + WTE[1]*R^{2}_{3,1})
 ```
 Changing the objective to:
 @objective(waste2, Min, sum([2000,1500,2500].*O2) + sum([110 33.9875 105; 100 53.9875 95].*W2) + sum([0 0 0; 114 0 105; 86 0 0].*R2));
@@ -262,7 +266,8 @@ waste2 = Model(Cbc.Optimizer)
 @variable(waste2, O2[j in J], Bin)
 
 #define objective
-@objective(waste2, Min, sum([2000,1500,2500].*O2) + sum([110 33.9875 105; 100 53.9875 95].*W2) + sum([0 0 0; 114 0 105; 86 0 0].*R2));
+@objective(waste2, Min, sum([2000,1500,2500].*O2) + sum([110 33.9875 105; 100 53.9875 95].*W2)
++ sum([0 0 0; 114 0 105; 86 0 0].*R2));
 
 #Constraints
 #Capacity and input constraints
@@ -296,9 +301,10 @@ optimize!(waste2)
 ```julia
 lowCost2 = round(objective_value(waste2), digits = 2 );
 println("The New Optimal Objective Value is \$", lowCost2,".");
-println(value.(W2));
-println(value.(O2));
-println(value.(R2));
+
+display(value.(W2));
+display(value.(O2));
+display(value.(R2));
 ```
 As a result, now the Waste-to-Energy facility (j = 3) will not be operational, and the MRF and Landfill will be.
 City 1 will now send all of their waste (100 Mg/day)to the MRF, and City2 will split their 170 Mg/day almost evenly 
@@ -316,5 +322,5 @@ img_path2= "C:/Users/Owner/OneDrive - Cornell University/Pictures/BEE4750-HW4-Di
 image2 = load(img_path2)
 ```
 # References
-Help with importing images from file -> https://juliaimages.org/latest/install/
-Help with LaTex terminology -> https://www.cmor-faculty.rice.edu/~heinken/latex/symbols.pdf
+Help with importing images from file -> https://juliaimages.org/latest/install/ ;
+Help with LaTex syntax -> https://www.cmor-faculty.rice.edu/~heinken/latex/symbols.pdf
